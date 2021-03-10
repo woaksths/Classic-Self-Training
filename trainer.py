@@ -6,14 +6,13 @@ class Trainer(object):
     def __init__(self, config, model, criterion, optimizer, save_path):
         self.config = config
         self.loss = criterion
-        self.evaluator = Evaluator(loss=self.loss)
+        self.evaluator = Evaluator(loss=self.loss, batch_size=self.config.test_batch_size)
         self.optimizer = optimizer
         self.save_path = save_path
         self.device = self.config.device
         self.model = model.to(self.device)
         self.train_loader = None
         self.valid_loader = None
-
         
     def calculate_accu(self, big_idx, targets):
         n_correct = (big_idx==targets).sum().item()
@@ -68,7 +67,6 @@ class Trainer(object):
         for epoch in range(self.config.epochs):
             self.train_epoch(epoch)
             dev_loss, dev_acc = self.evaluator.evaluate(self.model, self.valid_loader)
-            print()
             
         pass
     
