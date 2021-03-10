@@ -1,6 +1,7 @@
 import torch
 from evaluator import Evaluator
 from torch.utils.data import  DataLoader
+from util.early_stopping import EarlyStopping
 
 class Trainer(object):
     def __init__(self, config, model, criterion, optimizer, save_path):
@@ -13,6 +14,8 @@ class Trainer(object):
         self.model = model.to(self.device)
         self.train_loader = None
         self.valid_loader = None
+        self.test_loader = None
+        self.early_stopping = None
         
     def calculate_accu(self, big_idx, targets):
         n_correct = (big_idx==targets).sum().item()
@@ -59,21 +62,28 @@ class Trainer(object):
         print(f"Training Accuracy Epoch: {epoch_accu}")
         
         
-    def initial_train(self, label_dataset, dev_dataset):
+    def initial_train(self, label_dataset, dev_dataset, test_dataset):
         print('initial train module')
         self.train_loader = DataLoader(label_dataset, **self.config.train_params)
         self.valid_loader = DataLoader(dev_dataset, **self.config.valid_params)
-
+        self.test_loader = DataLoader(test_dataset, **self.config.test_params)
+        self.early_stopping = EarlyStopping(patience=3, verbose=True)
+        
         for epoch in range(self.config.epochs):
             self.train_epoch(epoch)
             dev_loss, dev_acc = self.evaluator.evaluate(self.model, self.valid_loader)
+            self.early_stopping(dev_loss)
             
+            if self.early_stopping.early_stop:
+                print("Eearly Stopping!")
+            
+            if epoch % 3 == 0:
+                test_loss, test_acc = self.evaluator.evaluate(self.model, self.test_loader, is_test=True)
         pass
     
     
     def pseudo_labeling(self):
         pass
-    
     
     
     def self_train(self):

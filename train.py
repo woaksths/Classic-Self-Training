@@ -1,7 +1,7 @@
 import argparse
 import constant as config
 import torch
-from dataset import read_dataset, sampling_dataset, Dataset
+from util.dataset import read_dataset, sampling_dataset, Dataset
 from transformers import BertTokenizer, BertForSequenceClassification
 from torch.utils.data import  DataLoader
 from trainer import Trainer
@@ -33,6 +33,9 @@ dev_labels = [data[1] for data in dev_data]
 dev_encodings = tokenizer(dev_texts, truncation=True, padding=True)
 dev_dataset = Dataset(dev_encodings, dev_labels)
 
+test_encodings = tokenizer(test_texts, truncation=True, padding=True)
+test_dataset = Dataset(test_encodings, test_labels)
+
 # We keep the label of unlabeled data to track for accuracy of pseudo-labeling
 unlabeled_texts = [data[0] for data in unlabeled_data]
 unlabeled_labels = [data[1] for data in unlabeled_data] 
@@ -51,8 +54,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=2e-5) #or AdamW
 
 # Init Trainer
 trainer = Trainer(config, model, loss_function, optimizer, args.save_path)
-
-trainer.initial_train(label_dataset, dev_dataset)
+trainer.initial_train(label_dataset, dev_dataset, test_dataset)
 1/0
 # trainer.self_train()
 
