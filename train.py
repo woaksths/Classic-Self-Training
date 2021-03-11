@@ -40,10 +40,6 @@ test_dataset = Dataset(test_encodings, test_labels)
 unlabeled_texts = [data[0] for data in unlabeled_data]
 unlabeled_labels = [data[1] for data in unlabeled_data] 
 
-# # Load dataset
-# train_loader = DataLoader(label_dataset, **config.train_params)
-# valid_loader = DataLoader(dev_dataset, **config.valid_params)
-
 # Build model 
 model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=config.class_num)
 print(model)
@@ -54,10 +50,29 @@ optimizer = torch.optim.Adam(model.parameters(), lr=2e-5) #or AdamW
 
 # Init Trainer
 trainer = Trainer(config, model, loss_function, optimizer, args.save_path)
+
+# Initial training (supervised leraning)
 trainer.initial_train(label_dataset, dev_dataset, test_dataset)
+
+# load checkpoint 
+checkpoint_path = trainer.sup_path +'/checkpoint.pt'
+checkpoint = torch.load(checkpoint_path)
+
+del model, optimizer, trainer.model, trainer.optimizer
+model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=config.class_num).to(config.device)
+optimizer = torch.optim.Adam(model.parameters(), lr=2e-5)
+
+model.load_state_dict(checkpoint['model_state_dict'])
+optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+trainer.model = model
+trainer.optimizer = optimizer
+
+# eval supervised trained model 
+trainer.evaluator.evaluate(trainer.model, trainer.test_loader, is_test=True)
+
+# self-training
+trainer.self_train()
 1/0
-# trainer.self_train()
 
-# Train model 
-
-# Evaluation
+# eval semi-supervised trained model 
