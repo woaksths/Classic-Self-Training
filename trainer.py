@@ -109,6 +109,8 @@ class Trainer(object):
                 
     def self_train(self, labeled_dataset, unlabeled_dataset, confidence_threshold=0.9):
         best_accuracy = -1
+        min_dev_loss = 987654321
+        
         for outer_epoch in range(self.config.epochs):
             # pseudo-labeling
             new_dataset = self.pseudo_labeling(unlabeled_dataset, confidence_threshold)
@@ -118,7 +120,7 @@ class Trainer(object):
             
             self.train_loader = DataLoader(labeled_dataset, **self.config.train_params)
             self.early_stopping = EarlyStopping(patience=3, verbose=True)
-            min_dev_loss = 987654321
+            
             
             # retrain model with labeled data + pseudo-labeled data
             for inner_epoch in range(self.config.epochs):
@@ -132,7 +134,7 @@ class Trainer(object):
                     torch.save({'model_state_dict':self.model.state_dict(),
                                 'optimizer_state_dict':self.optimizer.state_dict(), 'epoch':inner_epoch}, self.ssl_path +'/checkpoint.pt')
                 
-                if epoch % 2 == 0:
+                if inner_epoch % 2 == 0:
                     test_loss, test_acc = self.evaluator.evaluate(self.model, self.test_loader, is_test=True)
                     if best_accuracy < test_acc:
                         best_accuracy = test_acc
@@ -220,8 +222,8 @@ class Trainer(object):
         print('After updated -> labeled {} unlabeled {}'.format(len(labeled_texts), len(unlabeled_texts)))
         
         # encodings -> make dataset
-        labeled_dataset = encode_dataset(labeled_texts, labeled_labels)
-        unlabeled_dataset = encode_dataset(unlabeled_texts, unlabeled_labels)
+        labeled_dataset = self.encode_dataset(labeled_texts, labeled_labels)
+        unlabeled_dataset = self.encode_dataset(unlabeled_texts, unlabeled_labels)
         return labeled_dataset, unlabeled_dataset
         
         
