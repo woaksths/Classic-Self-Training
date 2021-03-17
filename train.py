@@ -81,7 +81,7 @@ trainer.optimizer = optimizer
 
 # eval supervised trained model 
 trainer.evaluator.evaluate(trainer.model, trainer.test_loader, is_test=True)
-1/0
+
 # self-training
 trainer.self_train(labeled_dataset, unlabeled_dataset)
 
